@@ -7,14 +7,28 @@ import sys
 from core import read_excel, summarize_column
 
 
-def main():
+def create_parser() -> argparse.ArgumentParser:
+    """Create and return the argument parser."""
     parser = argparse.ArgumentParser(description="Summarize numeric data from an Excel column.")
     parser.add_argument("--input", required=True, help="Path to input .xlsx file")
     parser.add_argument("--column", required=True, help="Column name to summarize")
     parser.add_argument("--output", default="output.csv", help="Output CSV path (default: output.csv)")
+    return parser
+
+
+def main():
+    parser = create_parser()
     args = parser.parse_args()
 
-    values = read_excel(args.input, args.column)
+    try:
+        values = read_excel(args.input, args.column)
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     summary = summarize_column(values)
 
     with open(args.output, "w", newline="") as f:

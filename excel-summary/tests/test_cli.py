@@ -45,6 +45,7 @@ def test_cli_file_not_found():
         capture_output=True, text=True, cwd=PROJECT_ROOT
     )
     assert result.returncode != 0
+    assert "Error:" in result.stderr or "Error:" in result.stdout
 
 
 def test_cli_missing_args():
@@ -64,3 +65,4 @@ def test_cli_column_not_found():
         capture_output=True, text=True, cwd=PROJECT_ROOT
     )
     assert result.returncode != 0
+    assert "Error:" in result.stderr or "Error:" in result.stdout
