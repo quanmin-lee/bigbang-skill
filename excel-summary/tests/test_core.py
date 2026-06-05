@@ -123,3 +123,29 @@ def test_read_large_numbers():
     result.append(large)
     summary = summarize_column(result)
     assert summary["max"] == large
+
+
+def test_summarize_all_identical():
+    """Should handle all identical values (dedup count = 1)."""
+    result = summarize_column([5, 5, 5, 5])
+    assert result["sum"] == 20
+    assert result["avg"] == 5
+    assert result["max"] == 5
+    assert result["min"] == 5
+    assert result["count"] == 1
+
+
+def test_read_name_column_text_only():
+    """Should return empty list for text-only name column."""
+    result = read_excel("sample.xlsx", "name")
+    assert result == []
+
+
+def test_summarize_mixed_int_float():
+    """Should handle mixed int and float values."""
+    result = summarize_column([1, 2.5, 3, 4.5])
+    assert result["sum"] == 11.0
+    assert result["avg"] == 2.75
+    assert result["max"] == 4.5
+    assert result["min"] == 1.0
+    assert result["count"] == 4

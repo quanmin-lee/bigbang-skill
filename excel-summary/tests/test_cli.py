@@ -104,3 +104,34 @@ def test_cli_csv_content():
     assert ["sum", "950.0"] in rows
     assert ["avg", "95.0"] in rows
     assert ["count", "10"] in rows
+
+
+def test_cli_text_column_output():
+    """Should output all zeros for text-only column."""
+    result = subprocess.run(
+        [sys.executable, "cli.py", "--input", "sample.xlsx", "--column", "grade", "--output", "text_out.csv"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    assert result.returncode == 0
+    output_path = os.path.join(PROJECT_ROOT, "text_out.csv")
+    with open(output_path, newline="") as f:
+        rows = list(csv.reader(f))
+    os.remove(output_path)
+    assert rows[1] == ["sum", "0"]
+    assert rows[5] == ["count", "0"]
+
+
+def test_cli_amount_column():
+    """Should correctly summarize amount column."""
+    result = subprocess.run(
+        [sys.executable, "cli.py", "--input", "sample.xlsx", "--column", "amount", "--output", "amt_out.csv"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    assert result.returncode == 0
+    output_path = os.path.join(PROJECT_ROOT, "amt_out.csv")
+    with open(output_path, newline="") as f:
+        rows = list(csv.reader(f))
+    os.remove(output_path)
+    assert ["sum", "3600.0"] in rows
+    assert ["avg", "450.0"] in rows
+    assert ["count", "8"] in rows
