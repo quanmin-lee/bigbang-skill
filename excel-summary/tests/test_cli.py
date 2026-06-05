@@ -48,6 +48,16 @@ def test_cli_file_not_found():
     assert "Error:" in result.stderr or "Error:" in result.stdout
 
 
+def test_cli_file_not_found_message():
+    """Should show specific 'File not found' error message."""
+    result = subprocess.run(
+        [sys.executable, "cli.py", "--input", "nonexistent.xlsx", "--column", "score"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    output = result.stderr + result.stdout
+    assert "File not found" in output
+
+
 def test_cli_missing_args():
     """Should show usage when required args missing."""
     result = subprocess.run(
@@ -65,4 +75,32 @@ def test_cli_column_not_found():
         capture_output=True, text=True, cwd=PROJECT_ROOT
     )
     assert result.returncode != 0
-    assert "Error:" in result.stderr or "Error:" in result.stdout
+    output = result.stderr + result.stdout
+    assert "Error:" in output
+
+
+def test_cli_column_not_found_message():
+    """Should show specific column not found error message."""
+    result = subprocess.run(
+        [sys.executable, "cli.py", "--input", "sample.xlsx", "--column", "nonexistent"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    output = result.stderr + result.stdout
+    assert "Column" in output and "not found" in output
+
+
+def test_cli_csv_content():
+    """Should output correct statistical values in CSV."""
+    result = subprocess.run(
+        [sys.executable, "cli.py", "--input", "sample.xlsx", "--column", "score", "--output", "verify_out.csv"],
+        capture_output=True, text=True, cwd=PROJECT_ROOT
+    )
+    assert result.returncode == 0
+    output_path = os.path.join(PROJECT_ROOT, "verify_out.csv")
+    with open(output_path, newline="") as f:
+        rows = list(csv.reader(f))
+    os.remove(output_path)
+    assert rows[0] == ["stat", "value"]
+    assert ["sum", "950.0"] in rows
+    assert ["avg", "95.0"] in rows
+    assert ["count", "10"] in rows

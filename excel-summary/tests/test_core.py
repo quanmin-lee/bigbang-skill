@@ -1,7 +1,20 @@
 """Tests for core module."""
 
+import os
 import pytest
+import openpyxl
 from core import read_excel, summarize_column
+
+
+@pytest.fixture
+def empty_sheet_path(tmp_path):
+    """Create an xlsx file with only a header row (no data)."""
+    path = str(tmp_path / "empty.xlsx")
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["name", "score", "grade"])
+    wb.save(path)
+    return path
 
 
 def test_read_numeric_column():
@@ -24,7 +37,7 @@ def test_read_non_numeric_column():
 
 def test_column_not_found():
     """Should raise ValueError for non-existent column."""
-    with pytest.raises(ValueError, match="Column 'nonexistent' not found"):
+    with pytest.raises(ValueError, match="Column 'nonexistent' not found in spreadsheet"):
         read_excel("sample.xlsx", "nonexistent")
 
 
@@ -92,3 +105,21 @@ def test_summarize_float_precision():
     assert result["max"] == 3.0
     assert result["min"] == 1.5
     assert result["count"] == 3
+
+
+def test_read_empty_sheet_returns_empty_list(empty_sheet_path):
+    """Should return empty list when sheet has header but no data rows."""
+    result = read_excel(empty_sheet_path, "score")
+    assert result == []
+    summary = summarize_column(result)
+    assert summary["sum"] == 0
+    assert summary["count"] == 0
+
+
+def test_read_large_numbers():
+    """Should handle very large numeric values."""
+    result = read_excel("sample.xlsx", "score")
+    large = 10_000_000_000
+    result.append(large)
+    summary = summarize_column(result)
+    assert summary["max"] == large

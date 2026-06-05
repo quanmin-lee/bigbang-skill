@@ -23,7 +23,7 @@ def _get_column_index(header, column: str) -> int:
     """
     if column in header:
         return header.index(column)
-    raise ValueError(f"Column '{column}' not found")
+    raise ValueError(f"Column '{column}' not found in spreadsheet")
 
 
 def read_excel(path: str, column: str) -> list[float]:
@@ -49,7 +49,7 @@ def read_excel(path: str, column: str) -> list[float]:
     # Find header row and locate column index
     header = next(ws.iter_rows(values_only=True), None)
     if header is None:
-        raise ValueError(f"Column '{column}' not found")
+        raise ValueError(f"Column '{column}' not found in spreadsheet")
     col_idx = _get_column_index(header, column)
 
     # Extract numeric values from the column (skip header)
