@@ -5,6 +5,9 @@ import statistics
 import openpyxl
 
 
+_EMPTY_SUMMARY = {"sum": 0, "avg": 0, "max": 0, "min": 0, "count": 0}
+
+
 def _get_column_index(header, column: str) -> int:
     """Find the column index for the given column name in the header row.
 
@@ -70,7 +73,7 @@ def summarize_column(values: list[float]) -> dict[str, float | int]:
         Dictionary with keys: sum, avg, max, min, count (unique count).
     """
     if not values:
-        return {"sum": 0, "avg": 0, "max": 0, "min": 0, "count": 0}
+        return _EMPTY_SUMMARY.copy()
 
     total = sum(values)
     avg = statistics.mean(values)
