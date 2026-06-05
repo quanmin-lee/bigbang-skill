@@ -1,6 +1,7 @@
 """Core module for Excel summary CLI tool."""
 
 import os
+import statistics
 import openpyxl
 
 
@@ -57,3 +58,30 @@ def read_excel(path: str, column: str) -> list[float]:
                 values.append(float(cell))
 
     return values
+
+
+def summarize_column(values: list[float]) -> dict[str, float | int]:
+    """Compute summary statistics for a list of numeric values.
+
+    Args:
+        values: List of float values to summarize.
+
+    Returns:
+        Dictionary with keys: sum, avg, max, min, count (unique count).
+    """
+    if not values:
+        return {"sum": 0, "avg": 0, "max": 0, "min": 0, "count": 0}
+
+    total = sum(values)
+    avg = statistics.mean(values)
+    max_val = max(values)
+    min_val = min(values)
+    unique_count = len(set(values))
+
+    return {
+        "sum": total,
+        "avg": avg,
+        "max": max_val,
+        "min": min_val,
+        "count": unique_count,
+    }

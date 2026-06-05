@@ -1,7 +1,7 @@
-"""Tests for core module - read_excel function."""
+"""Tests for core module."""
 
 import pytest
-from core import read_excel
+from core import read_excel, summarize_column
 
 
 def test_read_numeric_column():
@@ -32,3 +32,63 @@ def test_file_not_found():
     """Should raise FileNotFoundError for non-existent file."""
     with pytest.raises(FileNotFoundError, match="File not found"):
         read_excel("/nonexistent/path.xlsx", "score")
+
+
+def test_summarize_normal_case():
+    """Should compute correct statistics for a list of numbers."""
+    result = summarize_column([50, 60, 70, 80, 90])
+    assert result["sum"] == 350
+    assert result["avg"] == 70
+    assert result["max"] == 90
+    assert result["min"] == 50
+    assert result["count"] == 5
+
+
+def test_summarize_with_duplicates():
+    """Should count unique values (deduplicated)."""
+    result = summarize_column([100, 100, 200, 200])
+    assert result["sum"] == 600
+    assert result["avg"] == 150
+    assert result["max"] == 200
+    assert result["min"] == 100
+    assert result["count"] == 2
+
+
+def test_summarize_empty_list():
+    """Should return zeros for empty list."""
+    result = summarize_column([])
+    assert result["sum"] == 0
+    assert result["avg"] == 0
+    assert result["max"] == 0
+    assert result["min"] == 0
+    assert result["count"] == 0
+
+
+def test_summarize_single_element():
+    """Should handle single-element list correctly."""
+    result = summarize_column([42])
+    assert result["sum"] == 42
+    assert result["avg"] == 42
+    assert result["max"] == 42
+    assert result["min"] == 42
+    assert result["count"] == 1
+
+
+def test_summarize_negative_numbers():
+    """Should handle negative numbers correctly."""
+    result = summarize_column([-10, -5, 0, 5, 10])
+    assert result["sum"] == 0
+    assert result["avg"] == 0
+    assert result["max"] == 10
+    assert result["min"] == -10
+    assert result["count"] == 5
+
+
+def test_summarize_float_precision():
+    """Should handle floating-point values correctly."""
+    result = summarize_column([1.5, 2.5, 3.0])
+    assert result["sum"] == 7.0
+    assert result["avg"] == 7.0 / 3
+    assert result["max"] == 3.0
+    assert result["min"] == 1.5
+    assert result["count"] == 3
