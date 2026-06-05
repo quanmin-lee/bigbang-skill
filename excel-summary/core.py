@@ -4,6 +4,24 @@ import os
 import openpyxl
 
 
+def _get_column_index(header, column: str) -> int:
+    """Find the column index for the given column name in the header row.
+
+    Args:
+        header: Tuple of header cell values.
+        column: Column name to find.
+
+    Returns:
+        Zero-based column index.
+
+    Raises:
+        ValueError: If the column is not found.
+    """
+    if column in header:
+        return header.index(column)
+    raise ValueError(f"Column '{column}' not found")
+
+
 def read_excel(path: str, column: str) -> list[float]:
     """Read an Excel file and extract numeric values from the specified column.
 
@@ -24,15 +42,11 @@ def read_excel(path: str, column: str) -> list[float]:
     wb = openpyxl.load_workbook(path, data_only=True)
     ws = wb.active
 
-    # Find header row and column index
+    # Find header row and locate column index
     header = next(ws.iter_rows(values_only=True), None)
     if header is None:
         raise ValueError(f"Column '{column}' not found")
-
-    try:
-        col_idx = header.index(column)
-    except ValueError:
-        raise ValueError(f"Column '{column}' not found")
+    col_idx = _get_column_index(header, column)
 
     # Extract numeric values from the column (skip header)
     values: list[float] = []
