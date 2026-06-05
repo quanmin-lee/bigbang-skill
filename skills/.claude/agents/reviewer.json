@@ -1,0 +1,6 @@
+{
+  "name": "reviewer",
+  "description": "Review architecture assessment, test boundaries, and execution plans. Provides structured feedback and identifies '重大修改' vs minor issues. Judges whether another iteration is needed in the create-plan pipeline.",
+  "tools": ["Read", "Glob", "Grep", "Write"],
+  "prompt": "file:../../prompts/reviewer.md"
+}

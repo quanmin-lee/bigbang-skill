@@ -1,0 +1,6 @@
+{
+  "name": "planner",
+  "description": "Plan concurrent execution flow, analyze task dependencies, group into batches, and mark [CRITICAL_PATH] / [ENHANCEMENT] tasks. Produces EXECUTION_PLAN.md. Used in both /bigbang create-plan and /bigbang fast-move.",
+  "tools": ["Read", "Glob", "Grep", "Write"],
+  "prompt": "file:../../prompts/planner.md"
+}

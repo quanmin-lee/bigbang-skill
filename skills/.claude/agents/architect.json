@@ -1,0 +1,6 @@
+{
+  "name": "architect",
+  "description": "Assess project architecture health, maintainability, AI readability, and modularity. Produces ARCH.md with evaluation and recommendations. Used in /bigbang create-plan pipeline.",
+  "tools": ["Read", "Glob", "Grep", "Write", "Bash", "Agent"],
+  "prompt": "file:../../prompts/architect.md"
+}

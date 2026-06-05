@@ -1,0 +1,52 @@
+{
+  "skill_name": "bigbang",
+  "iterations": [
+    {
+      "skill_name": "bigbang",
+      "version": "iteration-1",
+      "per_eval": {},
+      "summary": {
+        "with_skill": {
+          "avg_pass_rate": 1.0,
+          "avg_duration_seconds": 182.0,
+          "total_assertions": 18,
+          "passed_assertions": 18,
+          "num_evals": 3
+        },
+        "without_skill": {
+          "avg_pass_rate": 0.05,
+          "avg_duration_seconds": 67.6,
+          "total_assertions": 18,
+          "passed_assertions": 1,
+          "num_evals": 3
+        }
+      }
+    },
+    {
+      "skill_name": "bigbang",
+      "version": "iteration-2",
+      "per_eval": {},
+      "summary": {
+        "with_skill": {
+          "avg_pass_rate": 1.0,
+          "avg_duration_seconds": 139.3,
+          "total_assertions": 18,
+          "passed_assertions": 18,
+          "num_evals": 3
+        },
+        "without_skill": {
+          "avg_pass_rate": 0.33,
+          "avg_duration_seconds": 76.9,
+          "total_assertions": 18,
+          "passed_assertions": 7,
+          "num_evals": 3
+        }
+      }
+    }
+  ],
+  "delta": {
+    "with_skill_pass_rate_delta": 0.0,
+    "with_skill_duration_delta": -42.7,
+    "without_skill_pass_rate_delta": 0.28
+  }
+}

@@ -1,0 +1,22 @@
+[
+  {"query": "/bigbang create-plan 帮我规划一个日志分析工具，从文件读取、解析、聚合到输出报表，用 Python 实现", "should_trigger": true},
+  {"query": "/bigbang fast-move --plan docs/my-plan.md", "should_trigger": true},
+  {"query": "这个项目太大了，帮我用 bigbang 拆成小任务，先做最关键的通路，后面的迭代再补", "should_trigger": true},
+  {"query": "帮我评估一下这个项目的架构健康度，看看有哪些可以改进的地方", "should_trigger": true},
+  {"query": "我需要安排一个多步骤的开发计划，几个模块可以并行开发，帮我规划并发任务和依赖关系", "should_trigger": true},
+  {"query": "有一个新功能要做，先评估架构，再写测试边界，然后分批次实现", "should_trigger": true},
+  {"query": "用 bigbang 的 create-plan 帮我规划一下新的数据处理 pipeline，数据从 Kafka 到 HDFS", "should_trigger": true},
+  {"query": "我想用 TDD 方式开发这个功能，先写测试再编码，帮我规划步骤并执行", "should_trigger": true},
+  {"query": "这个项目需要重构，帮我用 bigbang 先规划再执行，目标是解耦核心模块", "should_trigger": true},
+  {"query": "帮我找出这个项目的最小可运行版本，其他的功能后续迭代再补", "should_trigger": true},
+  {"query": "这个 Python 脚本运行报错了，报错信息是 KeyError: 'name'，帮我调试一下", "should_trigger": false},
+  {"query": "帮我创建一个飞书文档，记录今天的会议纪要，标题是'产品评审 2026-06-05'", "should_trigger": false},
+  {"query": "把 config.yaml 里的 database.host 改成 192.168.1.100，端口改成 5432", "should_trigger": false},
+  {"query": "帮我写一个 Python 函数，把 JSON 文件转换成 CSV 格式，只要最简实现", "should_trigger": false},
+  {"query": "这份销售数据有几个异常值，帮我用 pandas 分析一下分布情况", "should_trigger": false},
+  {"query": "帮我把最新代码部署到测试服务器 172.16.20.125 上", "should_trigger": false},
+  {"query": "帮我把这个 Python 项目翻译成 TypeScript，保持相同的接口签名", "should_trigger": false},
+  {"query": "帮我画一个系统架构图，用 Mermaid 格式，展示微服务之间的调用关系", "should_trigger": false},
+  {"query": "帮我设置 GitHub Actions CI/CD pipeline，push 到 main 分支时自动部署", "should_trigger": false},
+  {"query": "帮我 review 一下这个 PR，看看代码质量和架构设计有没有问题", "should_trigger": false}
+]

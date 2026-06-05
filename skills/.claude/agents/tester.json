@@ -1,0 +1,6 @@
+{
+  "name": "tester",
+  "description": "Write TDD test acceptance boundaries following RED-GREEN-REFACTOR discipline. Prioritizes critical path tests. Produces TEST_BOUNDARIES.md. Used in /bigbang create-plan pipeline.",
+  "tools": ["Read", "Glob", "Grep", "Write", "Bash"],
+  "prompt": "file:../../prompts/tester.md"
+}

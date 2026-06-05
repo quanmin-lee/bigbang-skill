@@ -1,0 +1,6 @@
+{
+  "name": "dev-lead",
+  "description": "Plan the minimal critical path tasks from a PLAN.md. Produces CRITICAL_PATH.md with task breakdown. Reviews batch outputs in /bigbang fast-move.",
+  "tools": ["Read", "Glob", "Grep", "Write", "Bash", "Agent"],
+  "prompt": "file:../../prompts/dev-lead.md"
+}

@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "create-plan-cli-tool",
+  "prompt": "我想用 bigbang 规划一个简单的 CLI 工具开发。需求是：一个 Python CLI，读取 Excel 文件（.xlsx），按指定列汇总数值数据，输出汇总结果的 CSV。支持 --input、--column、--output 三个参数。帮我用 create-plan 走一遍流程。",
+  "assertions": [
+    "产出 ARCH.md 文件，包含对 CLI 工具的架构评估",
+    "产出 EXECUTION_PLAN.md 文件，包含任务分解和批次规划",
+    "产出 TEST_BOUNDARIES.md 文件，包含 TDD 测试验收边界",
+    "产出 REVIEW_COMMENTS.md 文件，包含审查员意见",
+    "最终产出 PLAN.md 文件，合并所有子产物",
+    "V1 最小主链明确标注，且能在一轮执行中跑通",
+    "任务分解包含 [CRITICAL_PATH] 标注"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "expectations": [
+    {
+      "text": "产出 CRITICAL_PATH.md 文件，明确最小主链任务清单",
+      "passed": false,
+      "evidence": "CRITICAL_PATH.md NOT found"
+    },
+    {
+      "text": "确认或更新 EXECUTION_PLAN.md 文件",
+      "passed": false,
+      "evidence": "EXECUTION_PLAN.md NOT found"
+    },
+    {
+      "text": "每个 executor 的提交记录包含 test: 前缀的 RED/GREEN 提交",
+      "passed": false,
+      "evidence": "No GIT_COMMITS_SUMMARY.md or no test: prefix commits found"
+    },
+    {
+      "text": "GREEN 提交后运行测试确认通过",
+      "passed": false,
+      "evidence": "No GIT_COMMITS_SUMMARY.md or no test: prefix commits found"
+    },
+    {
+      "text": "REFACTOR 提交后运行测试确认仍然通过",
+      "passed": false,
+      "evidence": "No GIT_COMMITS_SUMMARY.md or no test: prefix commits found"
+    },
+    {
+      "text": "最终验证最小主链跑通",
+      "passed": false,
+      "evidence": "No verification result found"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "total": 6,
+    "pass_rate": 0.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 0,
+    "output_files": 3
+  },
+  "timing": {
+    "executor_duration_seconds": 92.6,
+    "total_duration_seconds": 92.6
+  }
+}

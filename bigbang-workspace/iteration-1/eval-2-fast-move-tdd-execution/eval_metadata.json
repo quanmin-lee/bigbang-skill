@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "fast-move-tdd-execution",
+  "prompt": "/bigbang fast-move --plan docs/plans/sample-plan.md",
+  "assertions": [
+    "产出 CRITICAL_PATH.md 文件，明确最小主链任务清单",
+    "确认或更新 EXECUTION_PLAN.md 文件",
+    "每个 executor 的提交记录包含 test: 前缀的 RED/GREEN 提交",
+    "GREEN 提交后运行测试确认通过",
+    "REFACTOR 提交后运行测试确认仍然通过",
+    "最终验证最小主链跑通"
+  ]
+}
