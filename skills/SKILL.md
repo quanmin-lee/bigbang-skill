@@ -1,15 +1,15 @@
 ---
 name: bigbang
-description: "Multi-role project workflow orchestrator with two modes: '/bigbang create-plan' runs a planning pipeline (architect, planner, tester, reviewer) to produce structured plans; '/bigbang fast-move' executes those plans via concurrent TDD sub-agents. Trigger for: multi-step project planning, architecture evaluation and breakdown, critical-path analysis, structured review before implementation, refactoring with planning, or any request involving '先规划再执行'. NOT for: single-file edits, one-off code generation, bug fixing, deployment, CI/CD config, documentation, data analysis, diagram drawing, code translation, or PR review (use dedicated skills instead). When unsure, do NOT trigger."
+description: "Multi-role project workflow orchestrator with two modes: '/bigbang create-plan' runs a multi-agent planning pipeline with product manager, dynamic role creation, and autonomous consensus iteration; '/bigbang fast-move' executes plans via concurrent TDD sub-agents. Trigger for: multi-step project planning, architecture evaluation and breakdown, critical-path analysis, structured review before implementation, refactoring with planning, or any request involving '先规划再执行'. NOT for: single-file edits, one-off code generation, bug fixing, deployment, CI/CD config, documentation, data analysis, diagram drawing, code translation, or PR review (use dedicated skills instead). When unsure, do NOT trigger."
 ---
 
 # BigBang Skill
 
-轻量级工具包，两大命令：
+轻量级工具包，三大命令：
 
 ```
 /bigbang help                          → 显示帮助
-/bigbang create-plan <需求>            → 多角色规划流水线（架构师→策划→测试→审查）
+/bigbang create-plan <需求>            → 多角色协作规划（PM对需求→动态角色→共识迭代→出PLAN）
 /bigbang fast-move --plan <PLAN.md>    → 最小主链并发执行（TDD → 实现 → 提交）
 ```
 
@@ -32,7 +32,7 @@ bigbang fast-move --plan <PLAN.md>
 ## 使用流程
 
 create-plan 和 fast-move 是**先后衔接**的两个阶段：
-1. 先用 `create-plan` 产出 PLAN.md（架构评估 + 执行计划 + 测试策略）
+1. 先用 `create-plan` 产出 PLAN.md（需求文档 → 架构评估 → 执行计划 → 测试策略）
 2. 再用 `fast-move --plan PLAN.md` 执行
 3. 也可以直接 `fast-move --plan` 传入手写的 plan
 
@@ -68,91 +68,146 @@ create-plan 和 fast-move 是**先后衔接**的两个阶段：
 
 **用户输入**: `/bigbang create-plan <需求描述>`
 
-### 固定角色（全部持久存活于会话中）
+### 三层流程
+
+create-plan 现在是一个**三阶段**流程：
+1. **Phase 1 — 需求对齐**: PM 与用户对咬需求，用户确认后才进行下一步
+2. **Phase 2 — 规划共识**: 所有角色自动规划、评审、迭代，直到全员达成共识，**不需要每轮问用户**
+3. **Phase 3 — 通知用户**: 共识达成后，输出 PLAN.md 并向用户展示摘要
+
+### Phase 1: 需求对齐（用户参与）
+
+**必须首先启动产品经理（PM）**。PM 是需求的第一接收人和翻译官。不能跳过此阶段。
+
+1. 读取 `prompts/product-manager.md` 作为 PM 的 prompt 模板
+2. 拼接上下文（用户需求原文、项目根目录）
+3. 使用 `Agent(name="product-manager", description="产品经理", prompt=拼接后的指令)` 启动 PM
+4. PM 会主动和用户对话（追问澄清、确认边界）
+5. PM 产出 `PRD.md`（产品需求文档）
+6. **等待用户确认 PRD 后**，进入 Phase 2
+
+重要规则：
+- **PM 必须先启动，不能跳过需求对齐阶段**
+- PM 会话在整个 create-plan 和 fast-move 过程中持久存活，随时可供咨询
+- 如果用户通过 PM 修改了需求，PM 更新 PRD.md，其他角色据此调整
+
+### Phase 2: 规划共识（自动迭代，不打扰用户）
+
+#### 2.1 动态创建角色
+
+在 PM 完成 PRD 后，Lead Agent 评估需求的复杂性，决定需要创建哪些角色。
+
+**必须创建的角色**（始终需要）:
 
 | 角色 | 职责 | 输出 |
 |------|------|------|
 | `architect` (架构师) | 评估架构健康度、可维护性、AI 可读性、模块化 | `ARCH.md` |
 | `planner` (策划师) | 规划并发执行流程、最小主链分组、任务依赖 | `EXECUTION_PLAN.md` |
 | `tester` (测试工程师) | 编写 TDD 测试验收边界 | `TEST_BOUNDARIES.md` |
-| `reviewer` (审查员) | 对架构评估、执行计划、测试边界进行挑刺审查 | `REVIEW_COMMENTS.md` |
+| `reviewer` (审查员) | 对整体方案挑刺审查，检查完整性 | `REVIEW_COMMENTS.md` |
 
-### 启动协作流程
+**动态创建的角色**（Lead Agent 根据场景自由决定）:
+- 示例: `security-expert`（安全专家）、`data-engineer`（数据工程师）、`UX-designer`（交互设计师）、`devops-engineer`（运维工程师）、`domain-expert`（领域专家）等
+- **鼓励** Lead Agent 按需创建更多角色。需要什么就创建什么，需求越复杂，角色越丰富
+- 创建方式: 使用 `Agent(name="<角色英文名>", description="<角色描述>", prompt=...)` 创建
+- 动态角色的 prompt = Lead Agent 根据角色职责自行撰写 + 上下文（PRD、项目根目录）
 
-#### Subagent Prompt 拼接规则
+#### 2.2 Subagent Prompt 拼接规则
 
-每个角色的 prompt = **角色模板文件** + **用户需求 + 上下文**。具体规则:
+每个角色的 prompt = **角色模板文件** + **上下文**:
 
-1. 读取对应角色的 prompt 模板文件（`prompts/<role>.md`）
-2. 在模板内容后**追加**以下上下文：
-   ```
-   ---
-   ## 本轮输入
-   - 用户需求: <原始用户输入>
-   - 项目根目录: <pwd>
-   - 当前迭代轮次: 第 N 轮
-   </如果有上一次的审查意见，追加>
-   - 上一轮审查意见: REVIEW_COMMENTS.md 内容
-   ```
-3. 拼接后的完整文本作为 Agent 工具的 `prompt` 参数
+```
+---
+## 本轮输入
+- 用户需求（原始）: <原始用户输入>
+- PRD 摘要: <PRD.md 的核心内容，包括功能清单和边界>
+- 项目根目录: <pwd>
+- 当前迭代轮次: 第 N 轮
+- PM 确认状态: 已确认 / 已更新
+</如果有一轮共识反馈，追加>
+- 共识反馈汇总: <上轮各角色的评审意见>
+```
 
 不要在 prompt 模板中硬写需求——模板是骨架，需求由 Lead Agent 在调用时注入。
 
-#### 首次调用 & 复用规则
+#### 2.3 并发启动初稿
 
-**创建 subagent**：使用 Agent 工具，`name` 设为角色英文名（architect/planner/tester/reviewer），`prompt` 为拼接后的完整指令。
-
-**复用 subagent**：直接使用 Agent 工具的 `name` 参数向已有角色发消息。如果该 name 当前没有活跃会话，会创建一个新的；如果有，会继续已有会话。这是一种"尽力复用"机制——无法预先检查 name 是否被占用，直接发即可。
-
-#### 并发启动（❗ 关键）
-
-第 1-3 步（架构师、策划师、测试工程师）不存在数据依赖，**必须在同一条消息中发送多个 Agent 工具调用**来实现并发：
+第 1 轮，不存在数据依赖的角色**必须在同一条消息中并发启动**:
 
 ```
 同一条消息:
-  Agent(description="architect", name="architect", prompt=拼接后的架构师指令)
-  Agent(description="planner", name="planner", prompt=拼接后的策划师指令)
-  Agent(description="tester", name="tester", prompt=拼接后的测试工程师指令)
+  Agent(description="架构师", name="architect", prompt=...)
+  Agent(description="策划师", name="planner", prompt=...)
+  Agent(description="测试工程师", name="tester", prompt=...)
+  Agent(description="审查员", name="reviewer", prompt=...)
+  Agent(description="<动态角色>", name="<动态角色>", prompt=...)  // 如果有
 ```
 
-等待三者都完成后，再启动审查员。审查员依赖前三者的产出。
+等待所有角色完成初稿。
 
-**降级策略**: 如果 Agent 工具不可用（嵌套 subagent 场景），Lead Agent 应退化为由自己直接扮演各角色，**按角色分段输出同一份文件**（如先以架构师视角写 ARCH.md，再以策划师视角写 EXECUTION_PLAN.md），最后以审查员视角审查。角色切换时注明当前扮演的角色即可。
+**降级策略**: 如果 Agent 工具不可用（嵌套 subagent 场景），Lead Agent 退化为由自己直接扮演各角色，按角色分段输出。
 
-#### 执行流水线
+#### 2.4 共识评审（核心改进）
 
-```
-第 N 轮（并发启动架构师 + 策划师 + 测试）:
-  1. architect → ARCH.md
-  2. planner → EXECUTION_PLAN.md
-  3. tester → TEST_BOUNDARIES.md
-  --- 等待三者完成 ---
-  4. reviewer → REVIEW_COMMENTS.md（审查前三者产出）
-     审查员判断是否需要下一轮
-```
+**这是最重要的改进**——plan 的通过不再由 reviewer 一人决定，而是**所有角色达成共识**。
+
+每轮共识评审流程:
+
+1. **汇总本轮产出**: Lead Agent 收集所有角色的产出文件
+2. **交叉发送评审**: 将各角色产出（角色之间互相不认识，由 Lead Agent 转发）发送给所有角色，每个角色从自己的专业视角评审他人产出:
+   - 架构师评审执行计划和测试边界的合理性
+   - 策划师评审架构评估与任务分解是否匹配
+   - 测试工程师评审架构和执行计划对测试的影响
+   - Reviewer 做全面挑刺审查
+   - 动态角色评审与自己领域相关的部分
+   - **PM 评审所有产出是否偏离 PRD 需求**——这是 PM 的独特视角，不同于技术角色的审查
+3. **PM 方向把控与共识投票**: 向 PM 发送消息，PM 检查所有产出是否与 PRD 中的需求一致。**PM 是共识参与者之一，不是旁观者**——如果 PM 认为方案偏离了用户需求，PM 同样给出 ❌，阻塞共识。**当角色间产生冲突时，PM 根据原始需求做出方向性判断**——技术优劣不是裁决依据，用户需求才是
+4. **共识判定**: Lead Agent 收集所有角色的意见。
+   **Reviewer 负责汇总"各角色风险项清零检查表"**，逐一列出每个角色提出的问题及其解决状态。共识判定的标准如下（按优先级从高到低）:
+
+   | 情况 | 判定 | 说明 |
+   |------|------|------|
+   | 存在任何 ❌ | ❌ 进入下一轮 | 有角色认为问题必须修正才能共识 |
+   | 存在 ⚠️ 且属于实质性风险 | ❌ 进入下一轮 | 即使只是 ⚠️，只要影响可行性/正确性/可维护性，就必须修 |
+   | 仅有纯鸡毛蒜皮的 ⚠️ | ✅ 可共识 | 措辞调整、格式美化、排版建议——不影响方案实质 |
+   | 全员 ✅ | ✅ 共识达成 | 所有角色的所有问题已清零 |
+
+   **实质性风险的定义**: 所有"有一定可能性会造成问题"的都属于实质性风险。只有"无论如何都不会造成任何实际影响"的才算纯鸡毛蒜皮。
+
+5. **精准回退**: 哪些角色有问题就只重跑哪些角色，已通过的角色不重跑
 
 终止条件:
-- 审查员连续两轮无"重大修改意见"（只改措辞/格式等非实质性内容）
-- 或达到 5 轮硬性上限
+- **全员共识达成**（所有角色的所有实质性风险已清零，PM 确认 ✅）→ 正常终止
+- 或达到 5 轮硬性上限 → Lead Agent 向用户报告哪些角色仍未达成共识及其原因
 
-**精准回退**: 当审查员判定需要第 N+1 轮时，不要盲目重跑所有角色。审查意见会指出哪个角色的产出有问题（如"架构评估 OK，测试边界缺少 P0 覆盖率"）。Lead Agent 据此**只重跑有问题的角色**，已通过的角色及其产出不重跑。
+**关键规则**:
+- Lead Agent 在 create-plan 阶段**绝不直接修改规划产出**。如果发现某个角色的产出有问题，反馈给该角色并要求在新一轮中修正
+- 整个 Phase 2 **自动迭代，不需要每轮停下来问用户**。PM 手持 PRD 作为方向标，足以在规划阶段把控质量方向
+- **共识 ≠ "没有矛盾"**。没有矛盾只意味着意见一致，不代表风险已清零。共识 = **所有角色提出的每一个实质性风险都被解决，无人再持有异议**
+- ** reviewer 是"零风险残留"的把控人**。reviewer 的意见是"最终裁定建议"——如果 reviewer 判定仍有未解决的实质性风险，无论 PM 或其他角色怎么看，都必须进入下一轮
 
-最终产出: Lead Agent 基于审查员的合并建议，写入 `PLAN.md`
+#### 2.5 共识确认信号
 
-审查员在 `REVIEW_COMMENTS.md` 末尾附加 `## 合并建议` 章节提供合并框架，**Lead Agent 负责**将审查员的建议转换为最终的 `PLAN.md`。职责分离：审查员判断质量，Lead Agent 执行组装。
+共识达成后，PM 更新 PRD.md，追加 `## 共识确认` 章节，记录:
+- 最终参与的角色列表
+- 每个角色的最终状态 ✅
+- 关键决策记录（哪些分歧、如何裁决）
+- 未尽事宜（留待执行阶段关注）
 
-**合并验证**: 写入 PLAN.md 后，Lead Agent 快速验证是否完整包含了 ARCH.md、EXECUTION_PLAN.md、TEST_BOUNDARIES.md 中的核心内容（架构决策、任务分解、测试策略）。如果发现有内容缺失，退回审查员补充合并建议。
+### Phase 3: 通知用户
 
-#### 完成后向用户展示
-
-PLAN.md 写入成功后，向用户展示简洁摘要：
+1. Reviewer 做最终完整性检查，在 REVIEW_COMMENTS.md 中产出合并建议
+2. Lead Agent 基于合并建议写入 `PLAN.md`（包含 PRD 摘要、ARCH.md、EXECUTION_PLAN.md、TEST_BOUNDARIES.md 的核心内容）
+3. 展示摘要:
 
 ```
 ✅ create-plan 完成
+- 需求对齐: <PRD 核心>
+- 参与角色: <所有角色，包括动态创建的>
 - 架构评估: <核心结论>
 - 执行计划: N 个任务，分 X 个批次
 - 测试策略: P0 测试覆盖 <关键路径>
-- 审查迭代: 共 N 轮
+- 共识轮次: 共 N 轮达成全员共识
 - 完整计划: PLAN.md
 
 下一步: 运行 /bigbang fast-move --plan PLAN.md 进入执行阶段。
@@ -171,15 +226,21 @@ PLAN.md 写入成功后，向用户展示简洁摘要：
 | 角色 | 职责 | 输出 |
 |------|------|------|
 | `dev-lead` (开发工程师) | 规划/确认最小主链任务清单 | `CRITICAL_PATH.md` |
-| 复用 `planner` (策划师) | 分配并发批次和依赖关系 | 确认/更新 `EXECUTION_PLAN.md` |
+| `planner` (策划师) | **显式触发**，分配并发批次和依赖关系 | 确认/更新 `EXECUTION_PLAN.md` |
 
 ### 执行流程
 
 1. **开发工程师**产出/确认 `CRITICAL_PATH.md`（最小主链任务清单）
-   - 如果 PLAN.md 来自 `create-plan`（已有 EXECUTION_PLAN.md），只做确认/微调
+   - 使用 `Agent(name="dev-lead", ...)` 启动 dev-lead
+   - 如果 PLAN.md 来自 create-plan（已有 EXECUTION_PLAN.md），只做确认/微调
    - 如果 PLAN.md 是手写的，开发工程师负责从零规划最小主链
+   - 确保 CRITICAL_PATH.md 包含了: 任务 ID、描述、输入/输出契约、验收条件、实现指引
 
-2. **策划师**产出/确认 `EXECUTION_PLAN.md`（批次规划 + 依赖关系）
+2. **显式触发策划师**（❗ 关键改进）
+   - 必须使用 `Agent(name="planner", ...)` 或 SendMessage to="planner" 显式触发 planner
+   - 将 CRITICAL_PATH.md 的完整内容通过 prompt 传给 planner
+   - Planner 基于 CRITICAL_PATH.md 确认或更新 `EXECUTION_PLAN.md`（批次规划 + 依赖关系）
+   - **必须等待策划师完成后再进入下一步**
 
 3. **按批次执行**:
    - 第一批: `[CRITICAL_PATH]` 任务
@@ -218,16 +279,17 @@ PLAN.md 写入成功后，向用户展示简洁摘要：
 6. **全部完成后**:
    - 验证最小主链跑通
    - 向用户展示简洁摘要:
-     ```
-     ✅ fast-move 完成
-     - 执行批次数: N 批
-     - 总任务数: N（通过 N / 失败 N）
-     - 提交次数: N
-     - 测试结果: X/Y 通过
-     - 最终状态: ✅ 成功
 
-     项目可用。关键文件和测试路径已就绪。
-     ```
+```
+✅ fast-move 完成
+- 执行批次数: N 批
+- 总任务数: N（通过 N / 失败 N）
+- 提交次数: N
+- 测试结果: X/Y 通过
+- 最终状态: ✅ 成功
+
+项目可用。关键文件和测试路径已就绪。
+```
 
 ---
 
@@ -236,7 +298,8 @@ PLAN.md 写入成功后，向用户展示简洁摘要：
 角色 subagent 通过**文件系统**进行通信：
 1. 每个角色将其产出写入约定的路径（如 `ARCH.md`、`EXECUTION_PLAN.md`）
 2. 后续角色读取这些文件作为输入
-3. 最终产物 `PLAN.md` 包含所有子产物的汇总
+3. 共识评审阶段，Lead Agent 负责将各角色的产出发送给其他角色进行交叉评审
+4. 最终产物 `PLAN.md` 包含所有子产物的汇总
 
 Executor 之间不直接通信，每个 executor 独立领走一个任务，通过约定输入/输出路径协作。
 
@@ -247,4 +310,3 @@ Executor 之间不直接通信，每个 executor 独立领走一个任务，通�
 本 skill 的 prompts/ 目录包含每个角色的完整 prompt 模板。当需要启动某个角色 subagent 时，读取对应 prompt 文件内容，作为 Agent 工具的 prompt 参数传入。
 
 本 skill 的 `.claude/agents/` 目录定义了每个角色的 agent 配置（名称、描述、工具列表），**仅供 Lead Agent 参考**（了解各角色的工具集等配置信息）。实际的 subagent 调用由 Lead Agent 通过 Agent 工具直接完成，而非通过 agent 文件注册。
-

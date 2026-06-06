@@ -22,13 +22,12 @@ git clone https://github.com/quanmin-lee/bigbang-skill.git
 /bigbang create-plan <需求描述>
 ```
 
-启动多角色规划流水线：
-1. **架构师** — 评估架构健康度，标注最小主链
-2. **策划师** — 分析任务依赖，规划并发批次
-3. **测试工程师** — 编写 TDD 验收边界
-4. **审查员** — 挑刺审查，决定迭代或终止
+三阶段多角色协作流水线：
+1. **Phase 1 — 需求对齐**: 产品经理（PM）与你对咬需求，产出 PRD，确认后进入下一阶段
+2. **Phase 2 — 共识规划**: 动态创建角色，并行产出方案，多轮自动共识评审，直到全员达成一致
+3. **Phase 3 — 输出通知**: 写入 PLAN.md 并向你展示摘要
 
-产出：`ARCH.md` + `EXECUTION_PLAN.md` + `TEST_BOUNDARIES.md` + `REVIEW_COMMENTS.md` → `PLAN.md`
+产出：`PRD.md` + `ARCH.md` + `EXECUTION_PLAN.md` + `TEST_BOUNDARIES.md` + `REVIEW_COMMENTS.md` → `PLAN.md`
 
 ### 执行阶段 — fast-move
 
@@ -36,7 +35,7 @@ git clone https://github.com/quanmin-lee/bigbang-skill.git
 /bigbang fast-move --plan PLAN.md
 ```
 
-按规划并发执行，每个任务走 TDD 流程（RED → GREEN → REFACTOR），自动 git commit。
+按规划并发执行，每个任务走 TDD 流程（RED → GREEN → REFACTOR），自动 git commit。开发工程师规划最小主链，策划师显式触发确认批次规划。
 
 ## 命令
 
