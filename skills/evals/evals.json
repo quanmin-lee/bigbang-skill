@@ -10,9 +10,11 @@
       "expectations": [
         "先启动 PM（产品经理）角色与用户对咬需求",
         "产出 PRD.md 产品需求文档",
+        "PM 产出需求影响评估（影响范围、改动难度、可行性）",
         "用户确认 PRD 后才进入规划阶段",
         "产出 ARCH.md 文件，包含对 CLI 工具的架构评估",
         "产出 EXECUTION_PLAN.md 文件，包含任务分解和批次规划",
+        "EXECUTION_PLAN.md 包含验收检查点 (Checkpoints) 章节，对应功能落地的批次",
         "产出 TEST_BOUNDARIES.md 文件，包含 TDD 测试验收边界",
         "产出 REVIEW_COMMENTS.md 文件，包含审查员意见",
         "存在多轮共识评审（不是 reviewer 一人决定）",
@@ -29,7 +31,9 @@
       "expectations": [
         "产出 CRITICAL_PATH.md 文件，明确最小主链任务清单",
         "显式触发策划师（planner）确认或更新 EXECUTION_PLAN.md",
+        "EXECUTION_PLAN.md 包含验收检查点 (Checkpoints) 章节（手写 plan 由 planner 创建）",
         "执行 EXECUTION_PLAN.md 中的批次规划",
+        "在检查点触发验收检查（check-it），产出 CHECK_REPORT.md",
         "每个 executor 的提交记录包含 test: 前缀的 RED/GREEN 提交",
         "GREEN 提交后运行测试确认通过",
         "REFACTOR 提交后运行测试确认仍然通过",
@@ -44,9 +48,11 @@
       "files": [],
       "expectations": [
         "PM 角色先启动，产出 PRD.md",
+        "PM 产出需求影响评估（影响范围、改动难度、可行性）",
         "ARCH.md 中包含对机器人架构的评估（消息接收、LLM调用、对话管理）",
         "V1 最小主链标注为接收消息→LLM调用→回复的端到端通路",
         "EXECUTION_PLAN.md 中首批任务为 [CRITICAL_PATH]",
+        "EXECUTION_PLAN.md 包含验收检查点，对应功能落地的批次",
         "审查员 REVIEW_COMMENTS.md 包含对各产物的具体批评意见",
         "共识评审阶段所有角色参与交叉评审",
         "PM 在共识评审中做方向把控"
