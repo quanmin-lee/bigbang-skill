@@ -122,6 +122,26 @@ Anthropic 的研究表明：**智能体与工具/输入之间的接口设计（A
 
 **实践意义**：当 Reviewer 产出 REVIEW_COMMENTS.md 时，使用统一的 ❌/⚠️/✅ 标签 + 表格格式，比自由文本描述更容易让其他角色和 Lead Agent 理解和处理。
 
+### 会话隔离（多会话安全）
+
+BigBang 必须支持**同一项目多个独立会话同时运行**。每个 `create-plan` 或 `fast-move` 调用都自动拥有一个唯一的会话目录，互不干扰。
+
+**问题**：多个 Claude Code 会话同时在同一个项目下运行 bigbang 时，如果都向项目根目录写 `ARCH.md`、`EXECUTION_PLAN.md` 等文件，会互相覆盖，导致数据丢失和混乱。
+
+**解决方案**：每个会话自动分配一个唯一的**会话 ID**（格式 `bigbang-YYYYMMDD-HHmmss`），所有产出文件写入 `<项目根目录>/bigbang-workspace/sessions/<会话ID>/`，不同会话完全隔离。
+
+| 会话 | 目录 | 说明 |
+|------|------|------|
+| 会话 A | `.../sessions/bigbang-20260608-143022/` | create-plan 产出全部在此 |
+| 会话 B | `.../sessions/bigbang-20260608-150105/` | 与 A 完全隔离，互不影响 |
+| 会话 C | `.../sessions/bigbang-20260609-091233/` | 即使同一天，时间戳不同即不同目录 |
+
+**Lead Agent 职责**：
+- 每次 `create-plan` 或 `fast-move` 启动时，首先生成唯一的会话 ID 并创建会话目录
+- 所有 subagent 在 prompt 中通过 `<会话目录>` 参数获知输出路径
+- 会话目录中包含 plans/（规划产出）和 workspace/（代码工作目录，仅 fast-move）
+- 所有输出文件（PRD.md, ARCH.md, EXECUTION_PLAN.md, CHECK_REPORT.md 等）写入会话目录，不在项目根目录散落文件
+
 ### 最小主链优先
 任何 Plan 都应包含完整的长期愿景，但必须明确标注 V1（最小可运行主链）与 V2+（后续完善）的边界。第一版必须是一个能跑通的最短端到端通路。拒绝"全部改完再一次性大测试"的模式。
 
@@ -161,11 +181,13 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 
 **必须首先启动产品经理（PM）**。PM 是需求的第一接收人和翻译官。不能跳过此阶段。
 
+**会话隔离生成**：每个 create-plan 调用自动生成唯一的会话 ID（格式 `bigbang-YYYYMMDD-HHmmss`），运行 `mkdir -p <项目根目录>/bigbang-workspace/sessions/<会话ID>` 创建会话目录。本会话的所有产出均写入此目录，多个会话互不干扰。
+
 1. 读取 `prompts/product-manager.md` 作为 PM 的 prompt 模板
-2. 拼接上下文（用户需求原文、项目根目录）
+2. 拼接上下文（用户需求原文、项目根目录、会话目录）
 3. 使用 `Agent(name="product-manager", description="产品经理", prompt=拼接后的指令)` 启动 PM
 4. PM 会主动和用户对话（追问澄清、确认边界）
-5. PM 产出 `PRD.md`（产品需求文档）
+5. PM 产出 `PRD.md`（写入会话目录）
 6. **PM 做初步影响评估**：PM 查看项目结构，在 PRD.md 中追加 `## 需求影响评估（初步）` 章节（影响范围、改动难度、潜在风险、可行性）。这给用户"团队对这个需求的第一印象"
 7. PM 向用户展示 PRD + 影响评估，**一起确认**。用户不只看到"做什么"，还看到"改多少、难不难、值不值得"
 8. **用户确认后**，进入 Phase 2
@@ -206,12 +228,15 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 ## 本轮输入
 - 用户需求（原始）: <原始用户输入>
 - PRD 摘要: <PRD.md 的核心内容，包括功能清单和边界>
-- 项目根目录: <pwd>
+- 项目根目录: <项目根目录>
+- 会话目录: <会话目录路径>  <!-- 所有产出写入此处，不同会话互不干扰 -->
 - 当前迭代轮次: 第 N 轮
 - PM 确认状态: 已确认 / 已更新
 </如果有一轮共识反馈，追加>
 - 共识反馈汇总: <上轮各角色的评审意见>
 ```
+
+每个角色按 convention 将产出文件写入会话目录（如架构师写 `<会话目录>/ARCH.md`，策划师写 `<会话目录>/EXECUTION_PLAN.md`）。
 
 不要在 prompt 模板中硬写需求——模板是骨架，需求由 Lead Agent 在调用时注入。
 
@@ -284,7 +309,7 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 ### Phase 3: 通知用户
 
 1. Reviewer 做最终完整性检查，在 REVIEW_COMMENTS.md 中产出合并建议
-2. Lead Agent 基于合并建议写入 `PLAN.md`（包含 PRD 摘要、ARCH.md、EXECUTION_PLAN.md、TEST_BOUNDARIES.md 的核心内容）
+2. Lead Agent 基于合并建议写入 `<会话目录>/PLAN.md`（包含 PRD 摘要、ARCH.md、EXECUTION_PLAN.md、TEST_BOUNDARIES.md 的核心内容）
 3. 展示摘要:
 
 ```
@@ -295,9 +320,10 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 - 执行计划: N 个任务，分 X 个批次，X 个验收检查点
 - 测试策略: P0 测试覆盖 <关键路径>
 - 共识轮次: 共 N 轮达成全员共识
-- 完整计划: PLAN.md
+- 完整计划: <会话目录>/PLAN.md
+- 会话目录: <会话目录>
 
-下一步: 运行 /bigbang fast-move --plan PLAN.md 进入执行阶段。执行中将自动在检查点触发验收（check-it），无需每步手动确认。
+下一步: 运行 /bigbang fast-move --plan <会话目录>/PLAN.md 进入执行阶段。执行中将自动在检查点触发验收（check-it），无需每步手动确认。
 ```
 
 ---
@@ -308,25 +334,33 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 
 如果用户输入 `/bigbang fast-move` 但没有 `--plan` 参数，提示用户提供 plan 文件路径：`请指定 plan 文件：/bigbang fast-move --plan <path>`。
 
+**会话隔离生成**：每次 fast-move 调用自动生成唯一的会话 ID（格式 `bigbang-YYYYMMDD-HHmmss`），运行 `mkdir -p <项目根目录>/bigbang-workspace/sessions/<会话ID>/outputs` 和 `mkdir -p <项目根目录>/bigbang-workspace/sessions/<会话ID>/workspace` 创建会话目录。本会话的所有产出（报告、代码、日志）均写入此目录，多个 fast-move 会话互不干扰。
+
+- **输出目录**: `<会话目录>/outputs/`（CRITICAL_PATH.md、EXECUTION_PLAN.md、CHECK_REPORT.md 等报告文件）
+- **工作目录**: `<会话目录>/workspace/`（executor 在此创建和修改实际项目代码）
+
 ### 角色
 
 | 角色 | 职责 | 输出 |
 |------|------|------|
-| `dev-lead` (开发工程师) | 规划/确认最小主链任务清单 | `CRITICAL_PATH.md` |
-| `planner` (策划师) | **显式触发**，分配并发批次和依赖关系 | 确认/更新 `EXECUTION_PLAN.md` |
+| `dev-lead` (开发工程师) | 规划/确认最小主链任务清单 | `<会话目录>/outputs/CRITICAL_PATH.md` |
+| `planner` (策划师) | **显式触发**，分配并发批次和依赖关系 | 确认/更新 `<会话目录>/outputs/EXECUTION_PLAN.md` |
 
 ### 执行流程
+
+0. **创建会话**: 生成会话 ID、创建会话目录、创建工作目录
 
 1. **开发工程师**产出/确认 `CRITICAL_PATH.md`（最小主链任务清单）
    - 使用 `Agent(name="dev-lead", ...)` 启动 dev-lead
    - 如果 PLAN.md 来自 create-plan（已有 EXECUTION_PLAN.md），只做确认/微调
    - 如果 PLAN.md 是手写的，开发工程师负责从零规划最小主链
    - 确保 CRITICAL_PATH.md 包含了: 任务 ID、描述、输入/输出契约、验收条件、实现指引
+   - 写入 `<会话目录>/outputs/CRITICAL_PATH.md`
 
 2. **显式触发策划师**（❗ 关键改进）
    - 必须使用 `Agent(name="planner", ...)` 或 SendMessage to="planner" 显式触发 planner
    - 将 CRITICAL_PATH.md 的完整内容通过 prompt 传给 planner
-   - Planner 基于 CRITICAL_PATH.md 确认或更新 `EXECUTION_PLAN.md`（批次规划 + 依赖关系）
+   - Planner 基于 CRITICAL_PATH.md 确认或更新 `<会话目录>/outputs/EXECUTION_PLAN.md`（批次规划 + 依赖关系）
    - **必须等待策划师完成后再进入下一步**
 
 3. **按批次执行**:
@@ -347,7 +381,7 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
      - 输出: <来自 CRITICAL_PATH.md 的输入/输出契约>
      - 验收条件: <来自 CRITICAL_PATH.md 的验收条件>
      - 实现指引: <来自 CRITICAL_PATH.md 的实现指引>
-     - 项目根目录: <pwd>
+     - 项目根目录: <会话工作目录>  <!-- 会话专属 workspace，不同会话互不干扰 -->
      - 前置产出: <如果依赖其他 executor 的输出，说明>
    ```
 
@@ -369,10 +403,10 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
       - PRD.md: <PRD 内容——这是期望状态>
       - 检查点定义: <从 EXECUTION_PLAN.md 中提取当前批次触发的检查点>
       - 当前批次: Batch N（已完成）
-      - 项目根目录: <pwd>
+      - 项目根目录: <会话工作目录>  <!-- 与 executor 相同的 workspace 路径 -->
       ```
    3. 使用 `Agent(name="checker", description="验收检查员", prompt=...)` 启动 checker
-   4. Checker 执行验证，产出 `CHECK_REPORT.md`（这是反馈信号）
+   4. Checker 执行验证，产出 `<会话目录>/outputs/CHECK_REPORT.md`（这是反馈信号）
 
    **结果判定（反馈信号处理 → Act 阶段）**:
 
@@ -402,6 +436,7 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 
 ```
 ✅ fast-move 完成
+- 会话目录: <会话目录>
 - 执行批次数: N 批
 - 总任务数: N（通过 N / 失败 N）
 - 检查点: X/Y 通过
@@ -409,19 +444,22 @@ create-plan 现在是一个**三阶段**流程，整体构成 PDCA（Plan-Do-Che
 - 提交次数: N
 - 测试结果: X/Y 通过
 - 最终状态: ✅ 成功 / ⚠️ 有未解决问题
+- 代码位置: <会话目录>/workspace/
 ```
 
 ---
 
 ## 工作指引：subagent 间通信
 
-角色 subagent 通过**文件系统**进行通信：
-1. 每个角色将其产出写入约定的路径（如 `ARCH.md`、`EXECUTION_PLAN.md`）
-2. 后续角色读取这些文件作为输入
+角色 subagent 通过**文件系统**在**会话目录**内进行通信：
+1. 每个角色将其产出写入 `<会话目录>/` 下的约定路径（如 `<会话目录>/ARCH.md`、`<会话目录>/EXECUTION_PLAN.md`）
+2. 后续角色读取会话目录中的文件作为输入（所有文件在同一个会话目录内，不跨会话读取）
 3. 共识评审阶段，Lead Agent 负责将各角色的产出发送给其他角色进行交叉评审
-4. 最终产物 `PLAN.md` 包含所有子产物的汇总
+4. 最终产物 `<会话目录>/PLAN.md` 包含所有子产物的汇总
 
-Executor 之间不直接通信，每个 executor 独立领走一个任务，通过约定输入/输出路径协作。
+Executor 之间不直接通信，每个 executor 独立领走一个任务，在 **会话工作目录** 内按约定输入/输出路径协作。
+
+**会话隔离确保安全**：不同会话之间的文件完全隔离。甲会话的 Lead Agent 永远不会读取乙会话的目录，反之亦然。即使两个会话使用相同的角色名（product-manager, architect 等），它们的产出也写入不同的目录，互不干扰。
 
 ---
 
